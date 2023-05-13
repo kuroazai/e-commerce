@@ -1,0 +1,4 @@
+Flask
+Flask-RESTful
+Flask-PyMongo
+Flask-JWT-Extended
