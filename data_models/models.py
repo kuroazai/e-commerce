@@ -35,3 +35,16 @@ class Sales:
     price: float
     date: str
     user_id: str
+
+
+@dataclass
+class Returns:
+    card_id: str
+    quantity: int
+    price: float
+    date: str
+    user_id: str
+    reason: str
+    status: str
+    refund: float
+    refund_date: str
