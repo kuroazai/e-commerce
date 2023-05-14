@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_restful import Api, Resource
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
-from data_models.models import YugiohCard, User
+from data_models.models import YugiohCard, User, Sales, Returns
 from databases.db_mongo import MongoDB
 from bson.objectid import ObjectId
 
@@ -107,6 +107,41 @@ class AddCardQuantity(Resource):
         Mongo.db.cards.update_one({"_id": ObjectId(card_id)}, {"$inc": {"quantity": additional_quantity}})
         return {"message": "Card quantity updated"}
 
+### Sales and returns
+class GetSales(Resource):
+    @jwt_required()
+    def get(self):
+        sales = Mongo.db.sales.find()
+        return jsonify([sale for sale in sales])
+
+class GetReturns(Resource):
+    @jwt_required()
+    def get(self):
+        returns = Mongo.db.returns.find()
+        return jsonify([return_data for return_data in returns])
+
+class CreateSale(Resource):
+    @jwt_required()
+    def post(self):
+        data = request.get_json()
+
+        sale = Sales(**data)
+        sale_id = Mongo.db.sales.insert_one(sale.__dict__).inserted_id
+
+        # Update the card quantity
+        Mongo.db.cards.update_one({"_id": ObjectId(sale.card_id)}, {"$inc": {"quantity": -sale.quantity}})
+
+        return {"message": "Sale created", "sale_id": str(sale_id)}
+
+class CreateReturn(Resource):
+    @jwt_required()
+    def post(self):
+        data = request.get_json()
+
+        return_data = Returns(**data)
+        return_id = Mongo.db.returns.insert_one(return_data.__dict__).inserted_id
+
+        return {"message": "Return created", "return_id": str(return_id)}
 
 class Login(Resource):
     def post(self):
@@ -133,6 +168,8 @@ api.add_resource(GetFilteredCard, "/card/filter")
 api.add_resource(AddCard, "/card")
 api.add_resource(UpdateCardQuantity, "/card/<string:card_id>/quantity")
 api.add_resource(AddCardQuantity, "/card/<string:card_id>/add-quantity")
+api.add_resource(GetReturns, "/returns")
+api.add_resource(GetSales, "/sales")
 api.add_resource(Login, "/login")
 
 
