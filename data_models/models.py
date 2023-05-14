@@ -28,3 +28,10 @@ class User:
     email: str
     hashed_password: str
 
+@dataclass
+class Sales:
+    card_id: str
+    quantity: int
+    price: float
+    date: str
+    user_id: str
