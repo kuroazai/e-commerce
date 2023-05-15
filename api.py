@@ -201,6 +201,10 @@ api.add_resource(AddCardQuantity, "/card/<string:card_id>/add-quantity")
 api.add_resource(GetReturns, "/returns")
 api.add_resource(GetSales, "/sales")
 api.add_resource(Login, "/login")
+api.add_resource(Register, "/register")
+api.add_resource(CreateSale, "/sale")
+api.add_resource(CreateReturn, "/return")
+
 
 if __name__ == "__main__":
     app.run(debug=True)
