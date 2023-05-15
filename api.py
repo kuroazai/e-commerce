@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from passlib.hash import sha256_crypt
 from flask_restful import Api, Resource
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
 from data_models.models import YugiohCard, User, Sales, Returns
@@ -143,6 +144,11 @@ class CreateReturn(Resource):
 
         return {"message": "Return created", "return_id": str(return_id)}
 
+def create_user(first_name: str, last_name: str, address: str, postcode: str, region: str, country: str, age: int, gender: str, email: str, hashed_password: str) -> str:
+    user = User(first_name=first_name, last_name=last_name, address=address, postcode=postcode, region=region, country=country, age=age, gender=gender, email=email, hashed_password=hashed_password)
+    user_id = Mongo.db.users.insert_one(user.__dict__).inserted_id
+    return str(user_id)
+
 class Login(Resource):
     def post(self):
         data = request.get_json()
@@ -160,6 +166,30 @@ class Login(Resource):
 
         return {"message": "Invalid username or password"}, 401
 
+class Register(Resource):
+    def post(self):
+        # get data from request
+        data = request.get_json()
+        # map data to conform with User model
+        first_name = data.get('first_name')
+        last_name = data.get('last_name')
+        address = data.get('address')
+        postcode = data.get('postcode')
+        region = data.get('region')
+        country = data.get('country')
+        age = data.get('age')
+        gender = data.get('gender')
+        email = data.get('email')
+        # raw password unhashed
+        password = data.get('password')
+
+        if not all([first_name, last_name, address, postcode, region, country, age, gender, email, password]):
+            return {"message": "Invalid input data"}, 400
+        # hash password security 101
+        hashed_password = sha256_crypt.hash(password)
+        # attempt to create user throws error if username already exists or invalid data
+        user_id = create_user(first_name, last_name, address, postcode, region, country, age, gender, email, hashed_password)
+        return {"message": "User created", "user_id": user_id}, 201
 
 api.add_resource(GetAllCards, "/cards")
 api.add_resource(GetFilteredCards, "/cards/filter")
@@ -171,7 +201,6 @@ api.add_resource(AddCardQuantity, "/card/<string:card_id>/add-quantity")
 api.add_resource(GetReturns, "/returns")
 api.add_resource(GetSales, "/sales")
 api.add_resource(Login, "/login")
-
 
 if __name__ == "__main__":
     app.run(debug=True)
