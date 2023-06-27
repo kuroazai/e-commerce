@@ -5,7 +5,8 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token
 from data_models.models import YugiohCard, User, Sales, Returns
 from databases.db_mongo import MongoDB
 from bson.objectid import ObjectId
-
+from external_api.ygoprodeck_api import get_card_by_name, get_card_by_archetype
+from scripts import encryption_kit
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb://localhost:27017/yugioh"
@@ -13,6 +14,17 @@ app.config["JWT_SECRET_KEY"] = "your-secret-key"
 jwt = JWTManager(app)
 api = Api(app)
 Mongo = MongoDB(app.config["MONGO_URI"], "yugioh")
+
+
+# test data
+users = {
+    'user1': {
+        'id': 1,
+        'username': 'user1',
+        'password': 'password1'
+    }
+}
+
 
 class GetAllCards(Resource):
     def get(self) -> list:
@@ -49,7 +61,8 @@ class GetFilteredCards(Resource):
 class GetCard(Resource):
     def get(self, card_id: str)-> dict:
         # call db and get card by id
-        card = Mongo.db.cards.find_one({"_id": ObjectId(card_id)})
+        #card = Mongo.db.cards.find_one({"_id": ObjectId(card_id)})
+        card = Mongo.find_one("cards", {"_id": ObjectId(card_id)})
         if card:
             return jsonify(card)
         return {"message": "Card not found"}, 404
@@ -77,10 +90,20 @@ class AddCard(Resource):
     @jwt_required()
     def post(self)-> dict:
         data = request.get_json()
+        if data.get("name") is None:
+            return {"message": "Missing name data"}, 400
+        if data.get("quantity") is None:
+            return {"message": "Missing quantity data"}, 400
         # map data to YugiohCard model
-        card = YugiohCard(**data)
+        # get yugioh card from ygo api
+
+        card = YugiohCard(get_card_by_name(data.get("name")))
+        print(card.__dict__)
+        card['quantity'] = data['quantity']
+
         # insert card into db and get id
-        card_id = Mongo.db.cards.insert_one(card.__dict__).inserted_id
+        #card_id = Mongo.db.cards.insert_one(card.__dict__).inserted_id
+        card_id = Mongo.insert_one("cards", card.__dict__)
         # return created id
         return {"message": "Card added", "card_id": str(card_id)}
 
@@ -160,7 +183,7 @@ class Login(Resource):
 
         user = Mongo.db.users.find_one({"username": username})
 
-        if user and user["password"] == password:  # In production, use a secure password hashing and validation
+        if user and user["password"] == password:
             access_token = create_access_token(identity=username)
             return {"access_token": access_token}
 

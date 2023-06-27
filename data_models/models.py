@@ -27,6 +27,7 @@ class User:
     gender: str
     email: str
     hashed_password: str
+    admin: bool = False
 
 @dataclass
 class Sales:
@@ -48,3 +49,4 @@ class Returns:
     status: str
     refund: float
     refund_date: str
+

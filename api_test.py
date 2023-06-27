@@ -32,15 +32,16 @@ class TestAPI(unittest.TestCase):
         # get card by id
         route = "/cards/5f9b3b4b9c9b7b3b4c9b7b3b"
         response = requests.get(self.url + route)
+
         pass
 
     def test_AddCard(self):
         # add card route
-        route = "/cards"
-        params = {}
-        response = requests.post(self.url + route)
-
-        pass
+        route = "/card"
+        params = {"name": "Chamber Dragonmaid", "quantity": 1}
+        response = requests.post(self.url + route, params=params)
+        print(response.json())
+        self.assertEqual(response.status_code, 200)
 
     def get_GetFilteredCard(self):
         pass
