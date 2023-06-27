@@ -10,7 +10,11 @@ class TestAPI(unittest.TestCase):
         card = ygo.get_card_by_name(name)
         self.assertEqual(card['data'][0]['name'], name)
 
-    def test_get_card_by_archetype(self):
+    def test_get_cards_by_archetype(self):
         archetype = "Blue-Eyes"
         card = ygo.get_card_by_archetype(archetype)
         self.assertEqual(card['data'][0]['archetype'], archetype)
+
+
+if __name__ == "__main__":
+    unittest.main()

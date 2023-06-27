@@ -1,4 +1,13 @@
 {
   "username" : "PowerAbuser",
-  "password" : "$2b$12$p/No2koVfFkPGcV8Jb5HZuLoWA8DgxUJPOWbJoJk1gGQAffFTmbVu"
+  "password" : "$2b$12$p/No2koVfFkPGcV8Jb5HZuLoWA8DgxUJPOWbJoJk1gGQAffFTmbVu",
+  "first_name" : "Power",
+  "last_name" : "Abuser",
+  "postcode": "12345",
+  "address": "1234 Main St",
+  "region": "CA",
+  "country" : "USA",
+  "age": 999,
+  "gender": "Gundam",
+  "admin": true
 }

@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import List
+import json
 
 @dataclass
 class YugiohCard:
@@ -15,6 +16,7 @@ class YugiohCard:
     quantity: int
     price: float
 
+
 @dataclass
 class User:
     first_name: str
@@ -25,10 +27,13 @@ class User:
     country: str
     age: int
     gender: str
-    email: str
-    hashed_password: str
+    username: str
+    password: str
     admin: bool = False
 
+    def to_json(self):
+        user_dict = asdict(self)
+        return json.dumps(user_dict)
 @dataclass
 class Sales:
     card_id: str

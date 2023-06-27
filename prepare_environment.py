@@ -1,17 +1,19 @@
 import json
 from databases.db_mongo import MongoDB
+from data_models.models import User
+from flask import jsonify
+Mongo = MongoDB("mongodb://localhost:27017", "yugioh")
+file_path = 'data/admin_user.json'
 
-Mongo = MongoDB("mongodb:27017", "hyperspace")
-file_path = 'data/accelerator_data.json'
 
-
-def load_accelerator_data(path):
+def load_admin_data(path):
     with open(path, "r") as file:
         return json.load(file)
 
 
 def upload_to_mongo(data: dict):
-    unique_id = "accelerators"
+    print(data)
+    unique_id = "users"
     result = Mongo.find_one("test", {"_id": unique_id})
     if result:
         # Document with the unique ID exists
@@ -21,6 +23,6 @@ def upload_to_mongo(data: dict):
         print("Document does not exist")
         Mongo.insert_one("test", data)
 
-file = load_accelerator_data(file_path)
+file = load_admin_data(file_path)
 upload_to_mongo(file)
 
