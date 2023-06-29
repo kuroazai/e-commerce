@@ -18,10 +18,7 @@ class TestAPI(unittest.TestCase):
     def test_GetAllCards(self):
         route = "/cards"
         response = requests.get(self.url + route)
-
-        # check if response is 200
         self.assertEqual(response.status_code, 200)
-        # check data type reutrned
         self.assertIsInstance(response.json(), list)
         pass
 
@@ -29,11 +26,10 @@ class TestAPI(unittest.TestCase):
         pass
 
     def test_GetCard(self):
-        # get card by id
         route = "/cards/5f9b3b4b9c9b7b3b4c9b7b3b"
         response = requests.get(self.url + route)
-
-        pass
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(response.json(), dict)
 
     def test_AddCard(self):
         # add card route
@@ -44,16 +40,20 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
 
     def get_GetFilteredCard(self):
+        route = "/card"
         pass
 
     def test_UpdateCardQuantity(self):
         pass
 
     def test_AddCardQuantity(self):
-        pass
+        route = "/card/5f9b3b4b9c9b7b3b4c9b7b3b"
+        params = {"quantity": 1}
+        response = requests.put(self.url + route, params=params)
+        print(response.json())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"message": "Card quantity updated"})
 
-    def test_Login(self):
-        pass
 
 
 
