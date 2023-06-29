@@ -13,6 +13,11 @@ def get_card_by_archetype(archetype: str) -> dict:
     response = requests.get(route, params=params)
     return response.json()
 
+def get_all_card_sets() -> dict:
+    route = "https://db.ygoprodeck.com/api/v7/cardsets.php"
+    response = requests.get(route)
+    return response.json()
+
 
 if __name__ == "__main__":
     name = "Chamber Dragonmaid"

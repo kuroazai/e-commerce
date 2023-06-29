@@ -34,6 +34,15 @@ class User:
     def to_json(self):
         user_dict = asdict(self)
         return json.dumps(user_dict)
+
+@dataclass
+class CardSet:
+    set_name: str
+    set_code: str
+    num_of_cards: int
+    tcg_date: float
+    set_image: int
+
 @dataclass
 class Sales:
     card_id: str

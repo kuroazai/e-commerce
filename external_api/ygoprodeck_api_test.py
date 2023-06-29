@@ -2,7 +2,6 @@ import unittest
 import ygoprodeck_api as ygo
 
 
-
 class TestAPI(unittest.TestCase):
 
     def test_get_card_by_name(self):
