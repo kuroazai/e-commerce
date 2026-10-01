@@ -1,0 +1,7 @@
+{
+  "_comment": "Template only. Generate the hash yourself; never commit a real one.",
+  "username": "admin",
+  "email": "admin@example.com",
+  "password_hash": "<run: python -c \"from cardshop.security import hash_password; print(hash_password('your-password'))\">",
+  "admin": true
+}
