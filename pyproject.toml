@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cardshop"
+version = "0.2.0"
+description = "A small REST API for a trading-card marketplace, with working authentication"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Fidelis Mwansa" }]
+keywords = ["flask", "rest-api", "jwt", "mongodb", "yugioh", "bcrypt"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Flask",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+    "Typing :: Typed",
+]
+# The original requirements.txt listed only passlib, while the code imported
+# bcrypt, pymongo and requests - so a fresh install produced a broken env.
+dependencies = [
+    "Flask>=2.3",
+    "Flask-JWT-Extended>=4.5",
+    "bcrypt>=4.0",
+    "requests>=2.28",
+]
+
+[project.optional-dependencies]
+mongo = ["pymongo>=4.3"]
+dev = ["pytest>=7", "pytest-cov>=4", "ruff>=0.4", "mypy>=1.8", "types-requests"]
+
+[project.scripts]
+cardshop = "cardshop.app:main"
+
+[project.urls]
+Homepage = "https://github.com/kuroazai/e-commerce"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cardshop"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src/cardshop"]
+ignore_missing_imports = true

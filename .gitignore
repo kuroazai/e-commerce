@@ -1,1 +1,23 @@
-*__pycache__
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+
+# Secrets and seeded accounts are never source. The original committed an admin
+# password hash in data/admin_user.json.
+.env
+*.env
+data/*.json
+!data/*.example.json
+
+.idea/
+.vscode/
+.DS_Store
