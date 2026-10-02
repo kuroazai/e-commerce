@@ -4,13 +4,16 @@ build-backend = "hatchling.build"
 
 [project]
 name = "cardshop"
-version = "0.2.0"
-description = "A small REST API for a trading-card marketplace, with working authentication"
+version = "0.3.0"
+description = "Scan, price and sell trading cards: OpenCV recognition, UK marketplace pricing, and sale-email automation"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "Fidelis Mwansa" }]
-keywords = ["flask", "rest-api", "jwt", "mongodb", "yugioh", "bcrypt"]
+keywords = [
+    "opencv", "perceptual-hash", "inventory", "ebay", "cardmarket",
+    "smolagents", "flask", "rest-api", "jwt", "yugioh",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Framework :: Flask",
@@ -33,10 +36,22 @@ dependencies = [
 
 [project.optional-dependencies]
 mongo = ["pymongo>=4.3"]
+# Card scanning. Kept optional because opencv and numpy are a large install and
+# the API, pricing and sale automation all work without them.
+vision = ["opencv-python-headless>=4.8", "numpy>=1.24"]
+# The LLM escalation layer. Optional on purpose: with no model configured the
+# pipeline runs fully deterministic and reports what it would have escalated.
+agents = ["smolagents>=1.0"]
+all = [
+    "pymongo>=4.3",
+    "opencv-python-headless>=4.8",
+    "numpy>=1.24",
+    "smolagents>=1.0",
+]
 dev = ["pytest>=7", "pytest-cov>=4", "ruff>=0.4", "mypy>=1.8", "types-requests"]
 
 [project.scripts]
-cardshop = "cardshop.app:main"
+cardshop = "cardshop.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/kuroazai/e-commerce"
@@ -47,6 +62,7 @@ packages = ["src/cardshop"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = ["vision: needs opencv and numpy"]
 
 [tool.ruff]
 line-length = 100

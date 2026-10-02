@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, development]
   pull_request:
 
 jobs:
@@ -17,16 +17,48 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install
+        # [all] matters: the vision and agent tests use pytest.importorskip, so
+        # installing only [dev] would skip them silently and the suite would
+        # still report success.
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[all,dev]"
+
+      - name: Lint
+        run: ruff check src tests
+
+      - name: Type check
+        run: mypy
+
+      - name: Test
+        # No MongoDB, no mail server, no marketplace account and no model. The
+        # suite runs the real flows against InMemoryDatabase, MemoryMailbox and
+        # StaticPriceProvider, which is why register-then-login and a full sale
+        # pipeline run are verified rather than assumed.
+        run: pytest --cov=cardshop --cov-report=term-missing
+
+      - name: The vision tests really ran
+        # importorskip is the right tool for an optional dependency and the
+        # wrong thing to discover silently in a job where every extra is
+        # installed. If opencv failed to install, the suite above would still
+        # report success with those tests quietly skipped.
+        run: pytest -m vision --co -q | grep -q "test_vision.py"
+
+  # A second job without the optional extras, proving they really are optional.
+  minimal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install without extras
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-      - name: Lint
-        run: ruff check src tests
-      - name: Type check
-        run: mypy
+      - name: Import without opencv or smolagents
+        run: python -c "import cardshop; from cardshop import agents, inventory, market, vendors; print('ok')"
       - name: Test
-        # No MongoDB service needed: the suite runs the real request flow
-        # against InMemoryDatabase, which is why register-then-login is verified
-        # rather than assumed.
-        run: pytest --cov=cardshop --cov-report=term-missing
+        run: pytest

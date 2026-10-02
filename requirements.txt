@@ -1,5 +1,12 @@
-Flask
-Flask-RESTful
-Flask-PyMongo
-Flask-JWT-Extended
-passlib
+# Dependencies are declared in pyproject.toml, which is the single source of
+# truth. This file exists only for tools that still expect it.
+#
+#   pip install -e ".[all,dev]"      everything, including the test tooling
+#   pip install -e ".[vision]"       card scanning (opencv, numpy)
+#   pip install -e ".[agents]"       the LLM escalation layer (smolagents)
+#   pip install -e ".[mongo]"        MongoDB instead of the JSON file store
+#
+# The original version of this file listed only passlib, Flask-RESTful and
+# Flask-PyMongo, while the code imported bcrypt, pymongo and requests. A fresh
+# install produced a broken environment.
+-e .

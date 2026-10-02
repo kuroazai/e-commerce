@@ -1,106 +1,127 @@
 # AGENTS.md
 
-Guidance for AI coding agents working in this repository.
+Notes for anyone, human or otherwise, changing this code.
 
 ## What this is
 
-`cardshop` is a REST API for a trading-card marketplace: accounts, a card
-catalogue, sales and returns. Flask, JWT, MongoDB.
+Four independent subsystems plus a thin API. `vision` identifies a card from a
+photo, `market` prices it, `inventory` tracks it, `vendors` reads the sale email
+and updates stock. `agents` is an LLM layer used at two specific points.
 
-## Why the authentication code reads defensively
+Each subsystem imports downward only. `vendors` uses `inventory`, `inventory`
+uses `market` for its enums, `vision` uses nothing from the others. Keep it that
+way; the ability to use the scanner with no database is deliberate.
 
-The previous version could not authenticate anyone, in four independent ways
-(see the README). Every one was a small, plausible mistake. None was caught,
-because no test ever did register-then-login.
+## Start here
 
-So the rules below are not style preferences. Each one closes a hole that was
-actually open in this codebase.
-
-## Rules
-
-### Never store or log a plaintext password.
-
-`User` has `password_hash`. There is no `password` field, deliberately — the old
-model had one and the two names being close is exactly how the bug happened.
-`User.public()` strips the hash and is what any response must use.
-
-### One hashing algorithm.
-
-bcrypt, via `security.hash_password` / `verify_password`. The old code hashed
-with `passlib.sha256_crypt` and verified with `bcrypt.checkpw`. If you add a
-second algorithm, you need a migration path, not a second code path.
-
-### `verify_password` returns a bool. Compare it to nothing.
-
-```python
-if verify_password(password, record["password_hash"]):   # correct
-if record["password_hash"] == verify_password(...):      # the original bug
+```bash
+pip install -e ".[all,dev]"
+pytest
+cardshop config
 ```
 
-### The signing key is never a literal.
+If you are changing behaviour, the fastest way to see the whole pipeline is a
+folder of `.eml` files:
 
-`Config.from_env` refuses to start in production with a placeholder or anything
-under 32 characters. Do not add a default that works in production, and do not
-relax `PLACEHOLDER_SECRETS`.
-
-### Privilege fields are never taken from a request.
-
-`AuthService.register` allows a fixed set of profile fields and drops everything
-else, so `{"admin": true}` in a request body does nothing. Any new privileged
-field must stay off that allow-list.
-
-### Authentication failures are indistinguishable.
-
-Unknown user and wrong password return the identical message, and the unknown
-case still performs a hash so the timings match. Distinct messages or timings
-enumerate valid usernames. `test_unknown_user_and_wrong_password_give_the_same_message`
-guards this.
-
-### Every outbound HTTP call has a timeout and a status check.
-
-`ygoprodeck.py` is the pattern. The original had neither: a hung server hung the
-request thread, and an error page was parsed as JSON and indexed into.
-
-## Layout
-
-```
-src/cardshop/
-├── config.py      environment config, fails fast
-├── security.py    hashing
-├── models.py      dataclasses
-├── db.py          Database protocol + Mongo + InMemory
-├── ygoprodeck.py  external API client
-├── auth.py        AuthService
-├── api.py         Flask blueprint
-└── app.py         create_app(config, database)
+```bash
+export CARDSHOP_MAILDIR=./mail
+export MONGO_URI=file://store.json
+cardshop sales --dry-run
 ```
 
-`create_app` takes an injectable `database`. That is what makes the suite able to
-run real HTTP requests against an in-memory store.
+## The rules that matter
+
+**Never mark a message processed before it has been handled.** The pipeline
+order is `fetch -> parse -> record -> adjust stock -> notify -> mark processed`
+and the last step is last on purpose. Moving it loses sales on any crash.
+
+**Idempotency is keyed on the order reference, not the message.** Re-running a
+mailbox is routine, not exceptional. A sale email with no order reference is
+refused for exactly this reason, because without a key the retry double-counts.
+
+**Return, do not raise, for things that are normal.** No card in the frame, a
+duplicate sale, an unparseable email, a card not in the index. These are all
+expected and the caller wants a count or an explanation, not a traceback. Reserve
+exceptions for genuine faults.
+
+**Refuse rather than guess.** `best_match` returns `None` on an ambiguous tie,
+`CardScanner` flags `needs_review` below the confidence bar, and `recommend_price`
+reports `confident=False` on thin data. Picking arbitrarily decrements the wrong
+card, and nobody finds out until an order cannot be posted.
+
+**`update_one` needs a Mongo operator.** Pass `{"$set": {...}}`. `InMemoryDatabase`
+accepts a bare dict and real Mongo does not, so a bare dict passes the test suite
+and fails in production. This has already happened once.
+
+**CLI output is ASCII.** An em-dash or a pound sign crashes a legacy Windows
+console code page, which is a silly way to lose a cron job.
+
+## Where the LLM belongs, and does not
+
+It is called in two places, both in `agents/triage.py`:
+
+- `parse_unrecognised_email`, when no parser claims a message.
+- `resolve_ambiguous_title`, when a title matches two items too closely.
+
+That is the whole remit. Do not put a model in the parsing path for formats that
+already work, in stock arithmetic, or in fee calculation. Those have to be right
+every single time and must not depend on a sampled token.
+
+Three invariants when touching this layer:
+
+1. It must work with `model=None`. There is a test for it. Deterministic-only is
+   a supported configuration.
+2. `max_escalations` is a hard ceiling. A mailbox full of junk must not be able
+   to spend money indefinitely.
+3. A model-extracted sale is recorded and flagged, never applied silently.
+
+## Secrets
+
+No endpoint, key, token or mailbox goes in the repository. `.env` is gitignored,
+`.env.example` has blank values, and `test_the_shipped_example_env_contains_no_values`
+enforces that. `Settings.describe()` prints what is configured and never what it
+is set to; there is a test for that too.
 
 ## Testing
 
 ```bash
-pytest          # 52 tests, no MongoDB, no network
+pytest
+pytest -m vision            # the OpenCV tests
+ruff check src tests
+mypy
 ```
 
-**Test through the API, not around it.** The bugs here were in the seams between
-model, hashing and query — each piece looked fine alone. `test_register_then_login_succeeds`
-is the shape that matters: do the whole round trip.
+Everything runs offline. No MongoDB, no mail server, no marketplace account, no
+model. `InMemoryDatabase`, `MemoryMailbox`, `StaticPriceProvider` and
+`CollectingNotifier` exist for this.
 
-`InMemoryDatabase` supports exact-match queries only, which is all this app
-issues. If you add a query operator, add it there too or the tests silently stop
-covering that path.
+**Vision fixtures are generated, not committed.** `tests/test_vision.py` draws a
+synthetic card and then photographs it badly on purpose. If you touch detection,
+run that file first and watch the count, because it is the only thing standing
+between a plausible-looking change and a scanner that quietly matches the wrong
+card. The current baseline is 48 of 48 on the generated set.
 
-External HTTP is tested with a fake session object. No test may make a real
-request.
+**Optional dependencies must stay optional.** `pytest.importorskip` at the top of
+`test_vision.py` and `test_smolagents_tools.py` means the suite passes without
+OpenCV or smolagents. Do not import either at module scope in `src/`.
 
-## Things not to do
+Both gates are clean and expected to stay that way. `ruff check` and `mypy` pass
+with no errors. The only suppressions are six `noqa: BLE001` lines, each on a
+broad `except` around a network call to something outside this process, and each
+with the reason written next to it. If you add another, write the reason.
 
-- Don't add a default production secret.
-- Don't return different errors for "no such user" and "wrong password".
-- Don't pass a request body straight into a model.
-- Don't commit credentials. The original committed an admin bcrypt hash in
-  `data/admin_user.json`; `.gitignore` now excludes `data/*.json` except
-  `*.example.json`.
-- Don't call `requests.get` without a timeout.
+## Things that look like bugs and are not
+
+- `_decode` returns `""` rather than raising when `get_payload(decode=True)`
+  hands back a `Message` instead of bytes. It can, for a multipart part, and one
+  malformed email should not take down a mailbox run.
+- `WebhookNotifier.send` swallows its exception. A notification that cannot be
+  delivered must not roll back a sale that has already been recorded.
+- `ParseResult` can carry both a sale and a non-empty `reason`. The reason is
+  then a caveat, such as a currency conversion, not a failure. `ok` keys off the
+  sale.
+- `summarise` falls back to asking prices when there are no completed sales. Thin
+  evidence is better than none, and `reliable` is `False` to say so.
+- `index.search` scores the artwork hash as the full-card score when either side
+  has no art hash. Scoring it as a mismatch would penalise every card in an
+  index built without them.
