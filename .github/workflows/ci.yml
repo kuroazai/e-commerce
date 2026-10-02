@@ -27,7 +27,7 @@ jobs:
           pip install -e ".[all,dev]"
 
       - name: Lint
-        run: ruff check src tests
+        run: ruff check src tests scripts
 
       - name: Type check
         run: mypy

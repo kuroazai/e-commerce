@@ -12,7 +12,7 @@ import json
 
 import pytest
 
-pytest.importorskip("smolagents")
+pytest.importorskip("smolagents", exc_type=ImportError)
 
 from cardshop.agents import build_smolagent_tools  # noqa: E402
 

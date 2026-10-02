@@ -21,8 +21,10 @@ class MongoDatabase:
     def __init__(self, uri: str, database: str) -> None:
         from pymongo import MongoClient
 
-        self.client = MongoClient(uri)
-        self.db = self.client[database]
+        # Annotated as Any because pymongo is an optional dependency: with it
+        # absent, mypy infers nothing for these and asks for an annotation.
+        self.client: Any = MongoClient(uri)
+        self.db: Any = self.client[database]
 
     def find_one(self, collection: str, query: dict) -> dict | None:
         return self.db[collection].find_one(query)

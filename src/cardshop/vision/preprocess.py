@@ -107,7 +107,7 @@ def _edge_maps(gray: np.ndarray) -> list[np.ndarray]:
     maps.append(cv2.Canny(blurred, 50, 150))
 
     # 2. Thresholds from the image's own brightness, for anything dimmer.
-    median = float(np.median(blurred))
+    median = float(np.median(np.asarray(blurred, dtype=np.float32)))
     lower = int(max(0, 0.66 * median))
     upper = int(min(255, 1.33 * median))
     maps.append(cv2.Canny(blurred, lower, max(upper, lower + 1)))

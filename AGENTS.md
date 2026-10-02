@@ -105,6 +105,20 @@ card. The current baseline is 48 of 48 on the generated set.
 `test_vision.py` and `test_smolagents_tools.py` means the suite passes without
 OpenCV or smolagents. Do not import either at module scope in `src/`.
 
+A skip is silent, though, which is the problem. If something in `src/` starts
+pulling OpenCV in at import time, the full suite still passes and only someone
+installing without the extras finds out. So check it directly:
+
+```bash
+python scripts/check_optional_extras.py
+```
+
+That runs the suite with both modules blocked by a meta-path finder, changing
+nothing about your environment. CI runs the same check as its `minimal` job.
+It has already earned its place: it caught `cardshop scan` importing OpenCV
+before checking whether the index file existed, so a missing index reported a
+missing dependency instead.
+
 Both gates are clean and expected to stay that way. `ruff check` and `mypy` pass
 with no errors. The only suppressions are six `noqa: BLE001` lines, each on a
 broad `except` around a network call to something outside this process, and each

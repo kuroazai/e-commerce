@@ -73,11 +73,15 @@ def cmd_serve(args: argparse.Namespace) -> int:
 
 
 def cmd_index_build(args: argparse.Namespace) -> int:
+    folder = Path(args.folder)
+    if not folder.is_dir():
+        print(f"no such folder: {folder}")
+        return 1
+
     import cv2
 
     from .vision import CardIndex, fingerprint_reference
 
-    folder = Path(args.folder)
     images = sorted(
         path for path in folder.iterdir()
         if path.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}
@@ -105,12 +109,15 @@ def cmd_index_build(args: argparse.Namespace) -> int:
 
 
 def cmd_scan(args: argparse.Namespace) -> int:
-    from .vision import CardIndex, CardScanner
-
+    # The index check comes before the import on purpose. Importing OpenCV takes
+    # a moment and can fail outright, and neither is a useful thing to do in
+    # order to tell someone their index file is missing.
     index_path = Path(args.index)
     if not index_path.is_file():
         print(f"no index at {index_path}; build one with: cardshop index build <folder>")
         return 1
+
+    from .vision import CardIndex, CardScanner
 
     scanner = CardScanner(CardIndex.load(index_path))
     exit_code = 0

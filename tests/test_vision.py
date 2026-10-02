@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import pytest
 
-cv2 = pytest.importorskip("cv2")
-np = pytest.importorskip("numpy")
+cv2 = pytest.importorskip("cv2", exc_type=ImportError)
+np = pytest.importorskip("numpy", exc_type=ImportError)
 
 from cardshop.vision import (  # noqa: E402 - after importorskip
     CARD_HEIGHT,

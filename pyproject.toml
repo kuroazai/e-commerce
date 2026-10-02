@@ -48,7 +48,10 @@ all = [
     "numpy>=1.24",
     "smolagents>=1.0",
 ]
-dev = ["pytest>=7", "pytest-cov>=4", "ruff>=0.4", "mypy>=1.8", "types-requests"]
+# pytest 8.2 for importorskip(exc_type=...). Without it, a missing optional
+# dependency and a broken one both show up as a skip, so a genuinely broken
+# opencv install would look exactly like opencv not being installed.
+dev = ["pytest>=8.2", "pytest-cov>=4", "ruff>=0.4", "mypy>=1.8", "types-requests"]
 
 [project.scripts]
 cardshop = "cardshop.cli:main"
@@ -72,6 +75,9 @@ target-version = "py310"
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.mypy]
+# 3.12, not the 3.10 floor this package supports: recent numpy stubs use 3.12
+# type syntax and mypy refuses to parse them under an older target. CI runs the
+# 3.10 matrix, so a version-specific error still gets caught there.
 python_version = "3.12"
 files = ["src/cardshop"]
 ignore_missing_imports = true

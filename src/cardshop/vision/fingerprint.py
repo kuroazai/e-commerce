@@ -31,7 +31,9 @@ def phash(image: np.ndarray) -> int:
 
     # The DC term carries overall brightness and would dominate the median, so
     # it is excluded from the threshold while still occupying a bit.
-    median = float(np.median(block.flatten()[1:]))
+    # asarray with an explicit dtype: cv2.dct is typed as returning either an
+    # integer or a floating array, and np.median does not accept that union.
+    median = float(np.median(np.asarray(block, dtype=np.float32).flatten()[1:]))
 
     bits = 0
     for value in block.flatten():
