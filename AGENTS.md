@@ -56,6 +56,14 @@ and fails in production. This has already happened once.
 **CLI output is ASCII.** An em-dash or a pound sign crashes a legacy Windows
 console code page, which is a silly way to lose a cron job.
 
+**3.10 is the floor, and nothing local enforces it.** `requires-python` says
+`>=3.10`, so `datetime.UTC` (3.11), `StrEnum` (3.11), `tomllib` (3.11) and
+friends are out; use `timezone.utc` and the rest. Pinning mypy to 3.10 would
+catch this, and it cannot be done, because recent numpy stubs use 3.12 type
+syntax that mypy refuses to parse under an older target. The 3.10 CI job is
+therefore the only guard. It has already caught exactly this: a `datetime.UTC`
+import at module scope, which made the whole package unimportable on 3.10.
+
 ## Where the LLM belongs, and does not
 
 It is called in two places, both in `agents/triage.py`:

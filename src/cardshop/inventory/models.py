@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from enum import Enum
 
 from ..market.base import Condition, Marketplace
@@ -15,9 +15,16 @@ def _new_id() -> str:
 
 
 def _now() -> datetime:
-    """Timezone-aware UTC. `datetime.utcnow` returns a naive value and is
-    deprecated; comparing naive and aware datetimes raises."""
-    return datetime.now(UTC)
+    """Timezone-aware UTC.
+
+    `datetime.utcnow` returns a naive value and is deprecated, and comparing a
+    naive datetime with an aware one raises.
+
+    `timezone.utc` rather than `datetime.UTC`: the latter was added in 3.11 and
+    this package supports 3.10, where importing it fails at module scope and
+    takes the whole package with it.
+    """
+    return datetime.now(timezone.utc)
 
 class ListingStatus(str, Enum):
     DRAFT = "draft"
