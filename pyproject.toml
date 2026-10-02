@@ -57,7 +57,7 @@ dev = ["pytest>=8.2", "pytest-cov>=4", "ruff>=0.4", "mypy>=1.8", "types-requests
 cardshop = "cardshop.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/kuroazai/e-commerce"
+Homepage = "https://github.com/kuroazai/cardshop"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cardshop"]
